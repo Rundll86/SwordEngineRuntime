@@ -84,8 +84,10 @@ shutil.copy(os.path.join(os.path.dirname(__file__), "asset/SwordRun.exe"), Insta
 PrettyPrint("Flow", 5)
 shutil.copy(os.path.join(os.path.dirname(__file__), "asset/SwordProj.exe"), InstallPath)
 PrettyPrint("Flow", 6)
-if InstallPath not in os.environ["path"]:
-    RunAsPowerShell(f'setx /M path "%path%;{InstallPath}"')
+if InstallPath not in os.environ["PATH"]:
+    RunAsPowerShell(f'setx /M PATH "%PATH%;{InstallPath}"')
+if os.environ.get("SWORD_INSTALL_PATH") is None:
+    RunAsPowerShell(f'setx /M SWORD_INSTALL_PATH "{InstallPath}"')
 PrettyPrint("Flow", 7)
 shutil.copy(os.path.join(os.path.dirname(__file__), "favicon.ico"), InstallPath)
 key = winreg.CreateKey(

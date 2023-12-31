@@ -1,4 +1,4 @@
-import os, argparse, json, shutil, subprocess
+import os, argparse, json, shutil, subprocess, zipfile
 
 
 def RunAsPowerShell(Cmd):
@@ -32,9 +32,24 @@ def RemoveDirIfExists(Path):
         RunAsPowerShell(f'rmdir /s /q "{Path}"')
 
 
+def ZipDir(DirName, FileName, DontZip: list = []):
+    FolderPath = os.path.join(os.getcwd(), DirName)
+    File = zipfile.ZipFile(FileName, "w")
+    DontZip.append(FileName)
+    for Root, _, Files in os.walk(FolderPath):
+        if os.path.basename(Root) in DontZip:
+            continue
+        for File2 in Files:
+            if File2 in DontZip:
+                continue
+            FilePath = os.path.join(Root, File2)
+            File.write(FilePath, os.path.relpath(FilePath, FolderPath))
+    File.close()
+
+
 class ActionType:
-    Create = "Create"
-    Build = "Build"
+    Create = "CREATE"
+    Build = "BUILD"
 
 
 class ExternalArg:
@@ -52,15 +67,16 @@ InfoData = json.load(open(InfoFile, encoding="utf8"))
 VersionInfo = InfoData["Version"]
 TemplatePath = os.path.join(RunningDir, "Template")
 LibraryPath = os.path.join(RunningDir, "Library")
+BuilderPath = os.path.join(LibraryPath, "Builder", "builder.exe")
 Parser = argparse.ArgumentParser()
 Parser.add_argument("Action")
-Parser.add_argument("-N", "--Name", default="MyGame")
-Parser.add_argument("-A", "--Author", default="")
-Parser.add_argument("-V", "--Version", default="1.0.0")
-Parser.add_argument("-E", "--MainClass", default="MyGame")
-Parser.add_argument("-C", "--Config", default="sword.config.json")
+Parser.add_argument("-N", "--Name", default=ExternalArg.Name)
+Parser.add_argument("-A", "--Author", default=ExternalArg.Author)
+Parser.add_argument("-V", "--Version", default=ExternalArg.Version)
+Parser.add_argument("-E", "--MainClass", default=ExternalArg.MainClass)
+Parser.add_argument("-C", "--Config", default=ExternalArg.Config)
 Args: ExternalArg = Parser.parse_args()
-if Args.Action == ActionType.Create:
+if Args.Action.upper() == ActionType.Create:
     print(f'Creating "{Args.Name}"...')
     print("Initing workspace...")
     MkdirIfNotExists("source")
@@ -70,6 +86,7 @@ if Args.Action == ActionType.Create:
         .replace("$ClassName$", Args.MainClass)
         .replace("$GameName$", Args.Name)
     )
+    shutil.copyfile(os.path.join(RunningDir, "Favicon.ico"), "favicon.ico")
     print("Initing config files...")
     Package = {
         "name": CamelToSnakeCase(Args.Name),
@@ -84,12 +101,15 @@ if Args.Action == ActionType.Create:
         "Author": "",
         "Version": "1.0.0",
         "Build": {
-            "Platform": "win32",
-            "IncludeRuntime": False,
+            "IncludingRuntime": False,
             "CompressRelease": True,
+            "OutputPath": "build",
+            "Clean": True,
+            "Favicon": "favicon.ico",
         },
         "MainClass": "MyGame",
         "Entry": "./source/{MainClass}.js",
+        "SwordRun": VersionInfo["Run"],
     }
     json.dump(SwordConfig, open(Args.Config, "w", encoding="utf8"))
     print("Installing libraries...")
@@ -101,8 +121,75 @@ if Args.Action == ActionType.Create:
     )
     RemoveDirIfExists("node_modules\\sword-engine-core\\node_modules")
     os.remove("node_modules\\sword-engine-core\\package-lock.json")
+    os.remove("node_modules\\sword-engine-core\\pushing.bat")
+    os.remove("node_modules\\sword-engine-core\\.gitignore")
+    RunAsPowerShell(f"rmdir /s /q node_modules\\sword-engine-core\\.git")
     print("OK.")
-elif Args.Action == ActionType.Build:
-    pass
+elif Args.Action.upper() == ActionType.Build:
+    SwordConfig = json.load(open(Args.Config, "r", encoding="utf8"))
+    if SwordConfig["Build"]["Clean"]:
+        print("Cleaning...")
+        RunAsPowerShell(f'rmdir /s /q "{SwordConfig["Build"]["OutputPath"]}"')
+        os.makedirs(SwordConfig["Build"]["OutputPath"])
+    print("Compressing game data...")
+    MkdirIfNotExists(SwordConfig["Build"]["OutputPath"])
+    ZipDir(
+        ".",
+        os.path.join(SwordConfig["Build"]["OutputPath"], "GameAsset.ddm"),
+        [SwordConfig["Build"]["OutputPath"]],
+    )
+    print("Generating executable file...")
+    print(" - Generating source code...")
+    shutil.copy(
+        os.path.join(LibraryPath, "Executable", "Executable.py"),
+        SwordConfig["Build"]["OutputPath"],
+    )
+    print(" - Generating info file...")
+    CurrentDir = os.getcwd()
+    os.chdir(SwordConfig["Build"]["OutputPath"])
+    InfoFile = {
+        "Name": SwordConfig["Name"],
+        "IncludeRuntime": SwordConfig["Build"]["IncludingRuntime"],
+    }
+    json.dump(InfoFile, open("Info.json", "w", encoding="utf8"))
+    print(" - Building executable file...")
+    StartData = [
+        BuilderPath,
+        "-w",
+        "-i",
+        os.path.join(CurrentDir, SwordConfig["Build"]["Favicon"]),
+        "-F",
+        os.path.join(LibraryPath, "Executable", "Executable.py"),
+        "--add-data",
+        "GameAsset.ddm;.",
+        "--add-data",
+        "Info.json;.",
+    ]
+    if SwordConfig["Build"]["IncludingRuntime"]:
+        StartData.append("--add-data")
+        StartData.append(
+            os.path.join(os.environ["SWORD_INSTALL_PATH"], "SwordRun.exe") + ";."
+        )
+    subprocess.Popen(
+        StartData,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
+    ).wait()
+    print(" - Cleaning...")
+    os.remove("GameAsset.ddm")
+    os.remove("Executable.py")
+    os.remove("Executable.spec")
+    os.remove("Info.json")
+    RunAsPowerShell("rmdir /s /q build")
+    shutil.copyfile("dist\\Executable.exe", f"{SwordConfig['Name']}.exe")
+    RunAsPowerShell("rmdir /s /q dist")
+    if SwordConfig["Build"]["CompressRelease"]:
+        print("Compressing game release...")
+        File = zipfile.ZipFile("GameRelease.zip")
+        File.write(f"{SwordConfig['Name']}.exe")
+        File.close()
+    os.chdir(CurrentDir)
+    print("Builded successfully.")
 else:
     print("Invalid ActionType.")

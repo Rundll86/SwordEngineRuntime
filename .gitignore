@@ -1,5 +1,4 @@
 dist
 source/Core
 installer/asset
-#installer/test.bat
-#installer/favicon.ico
+pushing.bat
