@@ -2,3 +2,4 @@ dist
 source/Core
 installer/asset
 pushing.bat
+build

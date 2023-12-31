@@ -144,7 +144,7 @@ elif Args.Action.upper() == ActionType.Build:
         os.path.join(LibraryPath, "Executable", "Executable.py"),
         SwordConfig["Build"]["OutputPath"],
     )
-    print(" - Generating info file...")
+    print(" - Generating start up info...")
     CurrentDir = os.getcwd()
     os.chdir(SwordConfig["Build"]["OutputPath"])
     InfoFile = {
@@ -153,6 +153,7 @@ elif Args.Action.upper() == ActionType.Build:
     }
     json.dump(InfoFile, open("Info.json", "w", encoding="utf8"))
     print(" - Building executable file...")
+    print("  - Generating build tree...")
     StartData = [
         BuilderPath,
         "-w",
@@ -166,10 +167,12 @@ elif Args.Action.upper() == ActionType.Build:
         "Info.json;.",
     ]
     if SwordConfig["Build"]["IncludingRuntime"]:
+        print("   - Loading runtime archive...")
         StartData.append("--add-data")
         StartData.append(
             os.path.join(os.environ["SWORD_INSTALL_PATH"], "SwordRun.exe") + ";."
         )
+    print("  - Generating...")
     subprocess.Popen(
         StartData,
         stdout=subprocess.DEVNULL,
@@ -186,7 +189,7 @@ elif Args.Action.upper() == ActionType.Build:
     RunAsPowerShell("rmdir /s /q dist")
     if SwordConfig["Build"]["CompressRelease"]:
         print("Compressing game release...")
-        File = zipfile.ZipFile("GameRelease.zip")
+        File = zipfile.ZipFile("GameRelease.zip", "w")
         File.write(f"{SwordConfig['Name']}.exe")
         File.close()
     os.chdir(CurrentDir)
