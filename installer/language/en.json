@@ -1,0 +1,16 @@
+{
+    "Name": "English",
+    "Flow": [
+        "Select the display language.",
+        "This script will install SwordEngine-Runtime on your computer.",
+        "Please choose the installation path ",
+        "Placing files...",
+        " - Core",
+        " - Development toolset",
+        "Registering components...",
+        "Registering application...",
+        "Installation completed."
+    ],
+    "Press": "Press any key to continue...",
+    "NotAdmin": "This script requires administrator privileges. Please restart as an administrator."
+}

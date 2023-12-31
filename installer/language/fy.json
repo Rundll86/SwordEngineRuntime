@@ -1,0 +1,16 @@
+{
+    "Name": "Français",
+    "Flow": [
+        "Sélectionnez la langue d'affichage.",
+        "Ce script installe swordengine Runtime sur votre ordinateur.",
+        "Veuillez sélectionner le chemin d'installation ",
+        "Placement de fichiers...",
+        " - Composants de base",
+        " - Ensemble d'outils de développement",
+        "Enregistrement des composants en cours...",
+        "Enregistrement de l'application...",
+        "L'installation est terminée."
+    ],
+    "Press": "Appuyez sur n'importe quelle touche pour continuer...",
+    "NotAdmin": "Ce script nécessite des droits d'administrateur, redémarrez en tant qu'administrateur."
+}
