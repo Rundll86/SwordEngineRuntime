@@ -59,7 +59,7 @@ class ExternalArg:
     Version = "1.0.0"
     MainClass = "MyGame"
     Config = "sword.config.json"
-    DevelopMode=False
+    DevelopMode = False
 
 
 RunningDir = os.path.dirname(__file__)
@@ -76,14 +76,22 @@ Parser.add_argument("-A", "--Author", default=ExternalArg.Author)
 Parser.add_argument("-V", "--Version", default=ExternalArg.Version)
 Parser.add_argument("-E", "--MainClass", default=ExternalArg.MainClass)
 Parser.add_argument("-C", "--Config", default=ExternalArg.Config)
-Parser.add_argument("-D","--DevelopMode",default=ExternalArg.DevelopMode,action="store_true")
+Parser.add_argument(
+    "-D", "--DevelopMode", default=ExternalArg.DevelopMode, action="store_true"
+)
 Args: ExternalArg = Parser.parse_args()
 if Args.Action.upper() == ActionType.Create:
     print(f'Creating "{Args.Name}"...')
     print(f"Initing {'develop ' if Args.DevelopMode else ''}workspace...")
     MkdirIfNotExists("source")
     open(f"source/{Args.MainClass}.js", "w", encoding="utf8").write(
-        open(os.path.join(TemplatePath, f"MainClass{'-Develop' if Args.DevelopMode else ''}.js"), "r", encoding="utf8")
+        open(
+            os.path.join(
+                TemplatePath, f"MainClass{'-Develop' if Args.DevelopMode else ''}.js"
+            ),
+            "r",
+            encoding="utf8",
+        )
         .read()
         .replace("$ClassName$", Args.MainClass)
         .replace("$GameName$", Args.Name)
@@ -115,6 +123,10 @@ if Args.Action.upper() == ActionType.Create:
     }
     json.dump(SwordConfig, open(Args.Config, "w", encoding="utf8"))
     print("Installing libraries...")
+    MkdirIfNotExists(os.path.join(LibraryPath, "SwordEngineCore"))
+    zipfile.ZipFile(os.path.join(LibraryPath, "SwordEngineCore.zip")).extractall(
+        os.path.join(LibraryPath, "SwordEngineCore")
+    )
     MkdirIfNotExists("node_modules")
     RemoveDirIfExists("node_modules\\sword-engine-core")
     shutil.copytree(
@@ -126,6 +138,7 @@ if Args.Action.upper() == ActionType.Create:
     os.remove("node_modules\\sword-engine-core\\pushing.bat")
     os.remove("node_modules\\sword-engine-core\\.gitignore")
     RunAsPowerShell(f"rmdir /s /q node_modules\\sword-engine-core\\.git")
+    RunAsPowerShell(f'rmdir /s /q "{os.path.join(LibraryPath, "SwordEngineCore")}"')
     print("OK.")
 elif Args.Action.upper() == ActionType.Build:
     SwordConfig = json.load(open(Args.Config, "r", encoding="utf8"))
