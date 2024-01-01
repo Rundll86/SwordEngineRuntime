@@ -59,6 +59,7 @@ class ExternalArg:
     Version = "1.0.0"
     MainClass = "MyGame"
     Config = "sword.config.json"
+    DevelopMode=False
 
 
 RunningDir = os.path.dirname(__file__)
@@ -75,13 +76,14 @@ Parser.add_argument("-A", "--Author", default=ExternalArg.Author)
 Parser.add_argument("-V", "--Version", default=ExternalArg.Version)
 Parser.add_argument("-E", "--MainClass", default=ExternalArg.MainClass)
 Parser.add_argument("-C", "--Config", default=ExternalArg.Config)
+Parser.add_argument("-D","--DevelopMode",default=ExternalArg.DevelopMode,action="store_true")
 Args: ExternalArg = Parser.parse_args()
 if Args.Action.upper() == ActionType.Create:
     print(f'Creating "{Args.Name}"...')
-    print("Initing workspace...")
+    print(f"Initing {'develop ' if Args.DevelopMode else ''}workspace...")
     MkdirIfNotExists("source")
     open(f"source/{Args.MainClass}.js", "w", encoding="utf8").write(
-        open(os.path.join(TemplatePath, "MainClass.js"), "r", encoding="utf8")
+        open(os.path.join(TemplatePath, f"MainClass{'-Develop' if Args.DevelopMode else ''}.js"), "r", encoding="utf8")
         .read()
         .replace("$ClassName$", Args.MainClass)
         .replace("$GameName$", Args.Name)
