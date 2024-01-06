@@ -24,7 +24,7 @@ def CamelToSnakeCase(CamelCaseString):
 
 def MkdirIfNotExists(Path):
     if not os.path.exists(Path):
-        os.mkdir(Path)
+        os.makedirs(Path)
 
 
 def RemoveDirIfExists(Path):
@@ -54,10 +54,10 @@ class ActionType:
 
 class ExternalArg:
     Action = ActionType.Create
-    Name = "MyGame"
+    Name = os.path.basename(os.getcwd())
     Author = ""
     Version = "1.0.0"
-    MainClass = "MyGame"
+    MainClass = "Game"
     Config = "sword.config.json"
     DevelopMode = False
 
@@ -146,14 +146,24 @@ elif Args.Action.upper() == ActionType.Build:
         print("Cleaning...")
         RunAsPowerShell(f'rmdir /s /q "{SwordConfig["Build"]["OutputPath"]}"')
         os.makedirs(SwordConfig["Build"]["OutputPath"])
-    print("Compressing game data...")
-    MkdirIfNotExists(SwordConfig["Build"]["OutputPath"])
-    ZipDir(
+    print(f"Compressing game data{'(Develop mode)' if Args.DevelopMode else ''}...")
+    RemoveDirIfExists("../SwordBuildingTemp")
+    shutil.copytree(
         ".",
+        os.path.join("../SwordBuildingTemp", os.path.basename(os.getcwd())),
+    )
+    shutil.copytree(
+        "../SwordEngineCore",
+        "../SwordBuildingTemp/SwordEngineCore",
+    )
+    ZipDir(
+        "../SwordBuildingTemp" if Args.DevelopMode else ".",
         os.path.join(SwordConfig["Build"]["OutputPath"], "GameAsset.ddm"),
         [SwordConfig["Build"]["OutputPath"]],
     )
-    print("Generating executable file...")
+    print(
+        f"Generating executable file{'(Develop mode)' if Args.DevelopMode else ''}..."
+    )
     print(" - Generating source code...")
     shutil.copy(
         os.path.join(LibraryPath, "Executable", "Executable.py"),
@@ -165,13 +175,15 @@ elif Args.Action.upper() == ActionType.Build:
     InfoFile = {
         "Name": SwordConfig["Name"],
         "IncludeRuntime": SwordConfig["Build"]["IncludingRuntime"],
+        "Develop": Args.DevelopMode,
+        "DirName": os.path.basename(os.path.dirname(os.getcwd())),
     }
     json.dump(InfoFile, open("Info.json", "w", encoding="utf8"))
     print(" - Building executable file...")
     print("  - Generating build tree...")
     StartData = [
         BuilderPath,
-        "-w",
+        "--console",
         "-i",
         os.path.join(CurrentDir, SwordConfig["Build"]["Favicon"]),
         "-F",
@@ -187,7 +199,7 @@ elif Args.Action.upper() == ActionType.Build:
         StartData.append(
             os.path.join(os.environ["SWORD_INSTALL_PATH"], "SwordRun.exe") + ";."
         )
-    print("  - Generating...")
+    print("  - Generating entry...")
     subprocess.Popen(
         StartData,
         stdout=subprocess.DEVNULL,
@@ -195,7 +207,6 @@ elif Args.Action.upper() == ActionType.Build:
         stdin=subprocess.DEVNULL,
     ).wait()
     print(" - Cleaning...")
-    os.remove("GameAsset.ddm")
     os.remove("Executable.py")
     os.remove("Executable.spec")
     os.remove("Info.json")

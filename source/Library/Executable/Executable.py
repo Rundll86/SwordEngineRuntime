@@ -27,12 +27,16 @@ while os.path.exists(GamePath):
 zipfile.ZipFile(os.path.join(RunningDir, "GameAsset.ddm")).extractall(GamePath)
 if Info["IncludeRuntime"]:
     subprocess.Popen(
-        [os.path.join(RunningDir, "SwordRun.exe"), "--Run", GamePath]
+        [
+            os.path.join(RunningDir, "SwordRun.exe"),
+            "--Run",
+            os.path.join(GamePath, Info["DirName"] if Info["Develop"] else ""),
+        ]
     ).wait()
 else:
     if os.environ["SWORD_INSTALL_PATH"] is None:
         easygui.msgbox(
-            "Your computer has not yet installed SwordEngine runtime. Please install it or ask the game author for a version of the game with a runtime.",
+            "Your computer has not yet installed SwordEngineRuntime. Please install it or ask the game author for a version of the game with a runtime.",
             "Error",
             icon="error",
         )
