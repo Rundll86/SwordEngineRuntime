@@ -59,6 +59,10 @@ if Args.Run is not None:
         .replace("$AbsPath$", os.getcwd().replace("\\", "/"))
     )
     LoaderFile.close()
+    print("SwordEngine Loaded!")
+    print("GamePath:", os.getcwd())
+    print("SwordLoader:", os.path.join(Tempdir, "sword-loader.js"))
+    print("Runtime:", RunningDir)
     subprocess.Popen(
         [CoreFile, os.path.join(Tempdir, "sword-loader.js")],
         stdout=subprocess.DEVNULL,

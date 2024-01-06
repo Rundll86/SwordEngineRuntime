@@ -1,4 +1,4 @@
 process.chdir("$AbsPath$")
-const $ClassName$ = require("$MainFile$");
-const Game = new $ClassName$.$ClassName$();
-Game.Init();
+var $ClassName$ = require("$MainFile$");
+const __Game__ = new $ClassName$.$ClassName$();
+__Game__.Init();

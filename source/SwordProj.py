@@ -117,7 +117,7 @@ if Args.Action.upper() == ActionType.Create:
             "Clean": True,
             "Favicon": "favicon.ico",
         },
-        "MainClass": "MyGame",
+        "MainClass": Args.MainClass,
         "Entry": "./source/{MainClass}.js",
         "SwordRun": VersionInfo["Run"],
     }
